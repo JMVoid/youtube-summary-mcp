@@ -1,0 +1,3 @@
+[[servers]]
+type = "github"
+repo = "https://github.com/jmvoid/youtube-summary-mcp"
