@@ -3,7 +3,7 @@ import os
 import json
 from contextlib import asynccontextmanager
 from enum import Enum
-from typing import AsyncGenerator, List, Optional
+from typing import AsyncGenerator, List, Optional, Dict, Any
 
 from mcp.server.fastmcp import FastMCP, Context
 import mcp.types as types
@@ -41,43 +41,36 @@ mcp = FastMCP(
 async def summarize_subtitle_id(
     url: str,
     target_langs: Optional[List[str]] = None,
-) -> str:
+) -> Optional[Dict[str, Any]]:
     """
-    Downloads transcripts or summarizes content from a YouTube URL.
+    Downloads transcripts from a YouTube URL and returns structured metadata.
 
-    :param url: The URL of the YouTube video, playlist, or channel.
-    :param target_langs: Optional list of preferred language codes for captions (e.g., ['en', 'zh-CN']).
+    :param url: The URL of the YouTube video.
+    :param target_langs: Optional list of preferred language codes for captions.
+    :return: A dictionary containing video metadata and transcript, or None if it fails.
     """
     try:
         print(f"正在处理 URL: {url}")
         yt = YouTube(url)
         
-        # 调用重构后的函数获取元数据和字幕内容
+        # 调用函数获取元数据和字幕内容
         metadata_payload = dl_caption_byId(yt, target_langs)
         
         if metadata_payload:
-            # 确保 'downloads' 目录存在
-            store_path = 'downloads'
-            os.makedirs(store_path, exist_ok=True)
-            
-            # 保存为 JSON 文件
-            file_path = os.path.join(store_path, f"{metadata_payload['video_id']}_metadata.json")
-            with open(file_path, 'w', encoding='utf-8') as f:
-                json.dump(metadata_payload, f, ensure_ascii=False, indent=4)
-            
-            success_msg = f"成功处理视频 '{metadata_payload['title']}'。元数据和字幕内容已保存到: {file_path}"
-            print(success_msg)
-            return success_msg
+            # 成功时直接返回字典
+            print(f"成功处理视频 '{metadata_payload['title']}'。")
+            return metadata_payload
         else:
+            # 失败时返回 None
             error_msg = f"无法为 URL {url} 获取字幕和元数据。"
             print(error_msg)
-            return error_msg
+            return None
 
     except Exception as e:
-        # 错误处理
+        # 异常时也返回 None
         error_msg = f"处理 URL {url} 时发生错误: {e}"
         print(error_msg)
-        return error_msg
+        return None
 
 # 5. 简化服务器启动入口
 # FastMCP 极大地简化了服务器的启动过程。
