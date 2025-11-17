@@ -2,9 +2,9 @@
 import os
 import re
 from pytubefix import YouTube
-from typing import Optional, List, Dict, Any
+from typing import Optional, Dict, Any
 from collections import defaultdict
-from utils import timeout_download
+from .utils import timeout_download
 from constant import TIMEOUT_DOWNLOAD_5
 
 VALID_LANG_CODES  = [
@@ -62,7 +62,7 @@ def _srt_content_to_text(srt_content: str) -> str:
     return '\n'.join(text_lines)
 
 
-def _find_best_caption_for_lang(cap_list: List[any], lang_code: str) -> Optional[any]:
+def _find_best_caption_for_lang(cap_list: list, lang_code: str) -> Optional[any]:
     """
     根据用户定义的优先级规则从字幕列表中选择最佳字幕。
     优先级:
@@ -125,13 +125,12 @@ def _get_base_lang(caption_code: str) -> Optional[str]:
         
     return None
 
-def dl_caption_byId(yt_object: YouTube, target_langs: Optional[List[str]] = None) -> Optional[Dict[str, Any]]:
+def dl_caption_byId(yt_object: YouTube, target_lang: str = "en") -> Optional[Dict[str, Any]]:
     """
     获取视频的最佳字幕内容并与元数据合并。
-    - 如果指定了 target_langs，则尝试获取这些语言的字幕。
-    - 如果指定的语言不可用或未指定，则按 VALID_LANG_CODES 顺序尝试下载一个。
-    - 如果优先列表中的语言都不可用，则随机下载一个可用的。
-    - 在回退模式下，只下载一个字幕。
+    - 优先获取 target_lang（默认为 "en"）的字幕。
+    - 如果指定语言不可用，则按 VALID_LANG_CODES 顺序回退。
+    - 如果都不可用，则选择任意一个可用字幕。
     """
     captions = yt_object.captions
     available_codes = [cap.code for cap in captions] if captions else []
@@ -158,46 +157,33 @@ def dl_caption_byId(yt_object: YouTube, target_langs: Optional[List[str]] = None
     
     print(f"视频 {yt_object.video_id} 的可用字幕语言: {list(best_captions.keys())}")
 
-    langs_to_download = []
-    is_fallback_mode = False
+    lang_to_download = None
 
-    if target_langs:
-        # 用户指定了语言
-        for lang in target_langs:
-            if lang in best_captions:
-                langs_to_download.append(lang)
-        if not langs_to_download:
-            print(f"未找到指定的语言 {target_langs}。将按预设顺序尝试下载。")
-            is_fallback_mode = True
+    # 1. 尝试获取目标语言
+    if target_lang in best_captions:
+        lang_to_download = target_lang
     else:
-        # 用户未指定，进入回退模式
-        print("未指定目标语言。将按预设顺序尝试下载。")
-        is_fallback_mode = True
-
-    if is_fallback_mode:
-        # 1. 按 VALID_LANG_CODES 顺序查找
+        print(f"未找到指定的语言 '{target_lang}'。将按预设顺序尝试下载。")
+        # 2. 按 VALID_LANG_CODES 顺序查找
         for lang_code in VALID_LANG_CODES:
             if lang_code in best_captions:
-                langs_to_download.append(lang_code)
+                lang_to_download = lang_code
                 print(f"找到优先语言 '{lang_code}'。准备下载。")
-                break  # 找到一个就停止
-        
-        # 2. 如果没找到，则随机选一个
-        if not langs_to_download and best_captions:
-            random_lang = list(best_captions.keys())[0]
-            langs_to_download.append(random_lang)
-            print(f"未找到优先语言。随机选择一个可用语言 '{random_lang}'。")
+                break
+    
+    # 3. 如果还没找到，则随机选一个
+    if not lang_to_download and best_captions:
+        lang_to_download = list(best_captions.keys())[0]
+        print(f"未找到优先语言。随机选择一个可用语言 '{lang_to_download}'。")
 
-    if not langs_to_download:
+    if not lang_to_download:
         print(f"没有找到可供下载的目标语言 {yt_object.video_id}。")
         return None
 
-    # 只处理找到的第一个语言
-    lang_to_process = langs_to_download[0]
-    caption_to_process = best_captions.get(lang_to_process)
+    caption_to_process = best_captions.get(lang_to_download)
 
     if not caption_to_process:
-        print(f"获取字幕 '{lang_to_process}' 失败 (视频ID: {yt_object.video_id})。")
+        print(f"获取字幕 '{lang_to_download}' 失败 (视频ID: {yt_object.video_id})。")
         return None
 
     try:

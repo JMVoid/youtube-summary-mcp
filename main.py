@@ -3,9 +3,9 @@ import os
 import json
 from contextlib import asynccontextmanager
 from enum import Enum
-from typing import AsyncGenerator, List, Optional, Dict, Any
+from typing import AsyncGenerator, Optional, Dict, Any
 
-from mcp.server.fastmcp import FastMCP, Context
+from fastmcp import FastMCP, Context
 import mcp.types as types
 from pytubefix import YouTube
 
@@ -40,13 +40,13 @@ mcp = FastMCP(
 @mcp.tool()
 async def summarize_subtitle_id(
     url: str,
-    target_langs: Optional[List[str]] = None,
+    target_lang: str = "en",
 ) -> Optional[Dict[str, Any]]:
     """
     Downloads transcripts from a YouTube URL and returns structured metadata.
 
     :param url: The URL of the YouTube video.
-    :param target_langs: Optional list of preferred language codes for captions.
+    :param target_lang: Preferred language code for captions, default is "en".
     :return: A dictionary containing video metadata and transcript, or None if it fails.
     """
     try:
@@ -54,7 +54,7 @@ async def summarize_subtitle_id(
         yt = YouTube(url)
         
         # 调用函数获取元数据和字幕内容
-        metadata_payload = dl_caption_byId(yt, target_langs)
+        metadata_payload = dl_caption_byId(yt, target_lang)
         
         if metadata_payload:
             # 成功时直接返回字典
@@ -74,5 +74,12 @@ async def summarize_subtitle_id(
 
 # 5. 简化服务器启动入口
 # FastMCP 极大地简化了服务器的启动过程。
+def start_server():
+    """服务器启动入口点。"""
+    try:
+        mcp.run()
+    except KeyboardInterrupt:
+        pass
+
 if __name__ == "__main__":
-    mcp.run()
+    start_server()

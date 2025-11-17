@@ -15,4 +15,8 @@ dependencies = [
 Homepage = "https://github.com/jmvoid/youtube-summary-mcp"
 
 [project.scripts]
-youtube-summary-mcp-server = "youtube_summary_mcp.main:start_server"
+youtube-summary-mcp-server = "main:start_server"
+
+[tool.setuptools]
+py-modules = ["main", "constant"]
+packages = ["youtube"]
