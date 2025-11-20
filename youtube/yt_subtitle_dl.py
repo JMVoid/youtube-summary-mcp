@@ -1,6 +1,7 @@
 
 import os
 import re
+import logging
 from pytubefix import YouTube
 from typing import Optional, Dict, Any
 from collections import defaultdict
@@ -125,7 +126,9 @@ def _get_base_lang(caption_code: str) -> Optional[str]:
         
     return None
 
-def dl_caption_byId(yt_object: YouTube, target_lang: str = "en") -> Optional[Dict[str, Any]]:
+from typing import Optional, Dict, Any, Tuple, Union
+
+def dl_caption_byId(yt_object: YouTube, target_lang: str = "en") -> Tuple[bool, Union[Dict[str, Any], str]]:
     """
     获取视频的最佳字幕内容并与元数据合并。
     - 优先获取 target_lang（默认为 "en"）的字幕。
@@ -136,10 +139,11 @@ def dl_caption_byId(yt_object: YouTube, target_lang: str = "en") -> Optional[Dic
     available_codes = [cap.code for cap in captions] if captions else []
     
     if not captions:
-        print(f"视频 {yt_object.video_id} 没有可用的字幕")
-        return None
+        error_msg = f"视频 {yt_object.video_id} 没有可用的字幕"
+        logging.error(error_msg)
+        return False, error_msg
 
-    print(f"视频 {yt_object.video_id} 的原始可用字幕代码: {available_codes}")
+    logging.info(f"视频 {yt_object.video_id} 的原始可用字幕代码: {available_codes}")
 
     # 按基础语言对字幕进行分组
     lang_groups = defaultdict(list)
@@ -155,7 +159,7 @@ def dl_caption_byId(yt_object: YouTube, target_lang: str = "en") -> Optional[Dic
         if best_cap:
             best_captions[lang] = best_cap
     
-    print(f"视频 {yt_object.video_id} 的可用字幕语言: {list(best_captions.keys())}")
+    logging.info(f"视频 {yt_object.video_id} 的可用字幕语言: {list(best_captions.keys())}")
 
     lang_to_download = None
 
@@ -163,38 +167,40 @@ def dl_caption_byId(yt_object: YouTube, target_lang: str = "en") -> Optional[Dic
     if target_lang in best_captions:
         lang_to_download = target_lang
     else:
-        print(f"未找到指定的语言 '{target_lang}'。将按预设顺序尝试下载。")
+        logging.info(f"未找到指定的语言 '{target_lang}'。将按预设顺序尝试下载。")
         # 2. 按 VALID_LANG_CODES 顺序查找
         for lang_code in VALID_LANG_CODES:
             if lang_code in best_captions:
                 lang_to_download = lang_code
-                print(f"找到优先语言 '{lang_code}'。准备下载。")
+                # print(f"找到优先语言 '{lang_code}'。准备下载。")
                 break
     
     # 3. 如果还没找到，则随机选一个
     if not lang_to_download and best_captions:
         lang_to_download = list(best_captions.keys())[0]
-        print(f"未找到优先语言。随机选择一个可用语言 '{lang_to_download}'。")
+        logging.info(f"未找到优先语言。随机选择一个可用语言 '{lang_to_download}'。")
 
     if not lang_to_download:
-        print(f"没有找到可供下载的目标语言 {yt_object.video_id}。")
-        return None
+        error_msg = f"没有找到可供下载的目标语言 (视频ID: {yt_object.video_id})。"
+        logging.error(error_msg)
+        return False, error_msg
 
     caption_to_process = best_captions.get(lang_to_download)
 
     if not caption_to_process:
-        print(f"获取字幕 '{lang_to_download}' 失败 (视频ID: {yt_object.video_id})。")
-        return None
+        error_msg = f"获取字幕 '{lang_to_download}' 失败 (视频ID: {yt_object.video_id})。"
+        logging.error(error_msg)
+        return False, error_msg
 
     try:
         # 1. 在内存中获取SRT内容
         timeout_download(TIMEOUT_DOWNLOAD_5)
         srt_content = caption_to_process.generate_srt_captions()
-        print(f"成功获取字幕 '{caption_to_process.code}' 的内容 (视频ID: {yt_object.video_id})")
+        logging.info(f"成功获取字幕 '{caption_to_process.code}' 的内容 (视频ID: {yt_object.video_id})")
 
         # 2. 将SRT内容转换为纯文本
         text_content = _srt_content_to_text(srt_content)
-        print(f"字幕内容已成功转换为文本。")
+        logging.info(f"字幕内容已成功转换为文本。")
 
         # 3. 构建 metadata_payload
         metadata_payload = {
@@ -207,8 +213,9 @@ def dl_caption_byId(yt_object: YouTube, target_lang: str = "en") -> Optional[Dic
             "content": text_content,
         }
         
-        return metadata_payload
+        return True, metadata_payload
 
     except Exception as e:
-        print(f"处理字幕 '{caption_to_process.code}' 失败 (视频ID: {yt_object.video_id}): {e}")
-        return None
+        error_msg = f"处理字幕 '{caption_to_process.code}' 失败 (视频ID: {yt_object.video_id}): {e}"
+        logging.error(error_msg)
+        return False, error_msg
