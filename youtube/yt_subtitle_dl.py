@@ -5,7 +5,7 @@ import logging
 from pytubefix import YouTube
 from typing import Optional, Dict, Any
 from collections import defaultdict
-from .utils import timeout_download
+from ..utils import timeout_download
 from constant import TIMEOUT_DOWNLOAD_5
 
 VALID_LANG_CODES  = [
@@ -204,13 +204,14 @@ def dl_caption_byId(yt_object: YouTube, target_lang: str = "en") -> Tuple[bool, 
 
         # 3. 构建 metadata_payload
         metadata_payload = {
-            "video_id": yt_object.video_id,
+
             "title": yt_object.title,
-            "author": yt_object.author,
             "description": yt_object.description,
-            "length": yt_object.length,
-            "available_captions": available_codes,
             "content": text_content,
+            # "video_id": yt_object.video_id,
+            # "author": yt_object.author,
+            # "length": yt_object.length,
+            # "available_captions": available_codes,
         }
         
         return True, metadata_payload
