@@ -1,18 +1,55 @@
-# Calculator MCP Server
+# YouTube Summary MCP Server
 
-本 MCE 服务器提供了一个名为 `calculate` 的工具，用于执行基本的算术运算。
+This project provides an MCP (Model Context Protocol) server that offers a tool to extract metadata and subtitles from YouTube videos.
 
-## 功能
+## Features
 
-该项目实现了一个 MCP 服务器，其中包含一个 `calculate` 工具，可以执行以下操作：
-- 加法 (+)
-- 减法 (-)
-- 乘法 (*)
-- 除法 (/)
+This server implements a single tool, `summarize_subtitle_id`, which provides the following capabilities:
 
-## MCP 客户端配置
+- **Metadata Extraction**: Retrieves the title and description of a given YouTube video.
+- **Subtitle Download**: Downloads the video's transcript in a specified language.
+- **Smart Language Fallback**: If the requested language is unavailable, the server intelligently searches for and downloads a suitable alternative based on a predefined priority list (e.g., English, Chinese, Spanish, etc.).
+- **Best Caption Selection**: Automatically prioritizes official transcripts over auto-generated (ASR) or machine-translated ones to ensure the highest quality content.
+- **Plain Text Conversion**: Converts the downloaded SRT subtitle file into a clean, easy-to-process plain text format.
+- **Extensive Language Support**: Supports a wide range of languages for transcript downloads.
 
-要在您的 MCP 客户端中使用此服务器，请添加以下配置：
+## Tool: `summarize_subtitle_id`
+
+This is the primary tool exposed by the server.
+
+### Arguments
+
+- `url` (str): **Required**. The full URL of the YouTube video.
+- `target_lang` (str): *Optional*. The desired language for the transcript, specified by a two-letter language code. Defaults to `"en"`.
+
+#### Supported Language Codes:
+`en`, `zh`, `es`, `hi`, `ar`, `pt`, `ru`, `ja`, `fr`, `de`, `ko`, `it`, `tr`, `nl`, `pl`, `vi`, `th`, `id`, `ms`, `fa`, `ur`, `bn`, `he`, `fil`, `sv`, `el`, `cs`, `hu`, `da`, `no`, `fi`, `ro`, `uk`, `sr`.
+
+### Return Value
+
+The tool returns a JSON object indicating the outcome:
+
+- **On Success**:
+  ```json
+  {
+    "status": "success",
+    "title": "The Video Title",
+    "description": "The video's description text.",
+    "content": "The full text of the transcript..."
+  }
+  ```
+
+- **On Failure**:
+  ```json
+  {
+    "status": "failure",
+    "reason": "A message explaining the cause of the failure."
+  }
+  ```
+
+## MCP Client Configuration
+
+To use this server in your MCP client (e.g., Cline, Cursor), add the following configuration:
 
 ```json
 {
