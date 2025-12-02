@@ -9,6 +9,7 @@ dependencies = [
     "mcp[cli]>=1.19.0",
     "python-dotenv>=1.0.1",
     "pytubefix",
+    "deepgram-sdk>=0.4.0",
 ]
 
 [project.urls]
@@ -18,5 +19,5 @@ Homepage = "https://github.com/jmvoid/youtube-summary-mcp"
 youtube-summary-mcp-server = "main:start_server"
 
 [tool.setuptools]
-py-modules = ["main", "constant"]
-packages = ["youtube"]
+py-modules = ["main"]
+packages = ["youtube", "utils", "whisper"]

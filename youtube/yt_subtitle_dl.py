@@ -5,8 +5,8 @@ import logging
 from pytubefix import YouTube
 from typing import Optional, Dict, Any
 from collections import defaultdict
-from ..utils import timeout_download
-from constant import TIMEOUT_DOWNLOAD_5
+from utils.utils import timeout_download
+from utils.constant import TIMEOUT_DOWNLOAD_5
 
 VALID_LANG_CODES  = [
     "en",   # 英语 – 全球通用语，国际交流、科技、互联网主导语言
